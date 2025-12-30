@@ -22,6 +22,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useEffect } from "react";
 import type { Database } from '@/lib/database.types';
 import type { PostgrestError } from '@supabase/supabase-js';
+import { useAppNavigation } from "@/hooks/useAppNavigation";
 
 interface MaritalStatusProps {
     language: 'bn' | 'en';
@@ -464,15 +465,8 @@ const MaritalStatus = ({ language: initialLanguage }: { language: 'bn' | 'en' })
         }
     });
 
-    const handleNavigate = (section: string) => {
-        if (section === 'logout') {
-            navigate('/login');
-        } else if (section === 'dashboard') {
-            navigate('/');
-        } else {
-            navigate(`/${section}`);
-        }
-    };
+    const { handleNavigate: appNavigate } = useAppNavigation();
+    const handleNavigate = (section: string) => appNavigate(section, language);
 
     const handleLanguageChange = (newLanguage: 'bn' | 'en') => {
         setLanguage(newLanguage);
@@ -609,8 +603,7 @@ const MaritalStatus = ({ language: initialLanguage }: { language: 'bn' | 'en' })
                             <CardTitle>{t.title}</CardTitle>
                             <CardDescription className="text-red-700 font-extrabold text-base">
                                 {language === 'bn'
-                                    ? '*আপনার বৈবাহিক তথ্য এবং স্বামী/স্ত্রীর বিবরণ প্রদান করুন । সমস্ত প্রয়োজনীয় ক্ষেত্র পূরণ না করা পর্যন্ত আপনি ফর্মটি সংরক্ষণ করতে পারবেন না। সঠিক তথ্য প্রদান করুন। সর্বোচ্চ ৪জন  স্ত্রীর তথ্য প্রদান করা যাবে।'
-                                    : '*Provide your marital information and spouse details. You cant save the form unless all required fields are filled. Please provide accurate information. A maximum of 4 Wife entries are allowed.'}
+                                    ? '*বৈবাহিক তথ্য প্রদান আবশ্যিক। প্রযোজ্য ক্ষেত্রে একাধিক স্ত্রী (সর্বোচ্চ ৪ জনের) তথ্য প্রদান করা যাবে।' : 'Providing marital information is mandatory. Where applicable, information for multiple spouses (maximum 4) may be provided.'}
                             </CardDescription>
                         </CardHeader>
                         <div className="max-w-7xl mx-auto">

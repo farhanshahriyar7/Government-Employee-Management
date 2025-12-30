@@ -20,6 +20,7 @@ import { WelcomeHeader } from "@/components/WelcomeHeader";
 import { QuickStats } from "@/components/QuickStats";
 import { DashboardCard } from "@/components/DashboardCard";
 import { CopyRights } from "@/components/CopyRights";
+import { useAppNavigation } from "@/hooks/useAppNavigation";
 
 const Index = () => {
   const [language, setLanguage] = useState<'bn' | 'en'>('bn');
@@ -57,87 +58,11 @@ const Index = () => {
       { label: getSectionTitle(currentSection), section: currentSection },
     ];
   }
-
   // Navigation + placeholder handling
-  const handleNavigation = async (section: string) => {
+  const { handleNavigate: appNavigate } = useAppNavigation();
+  const handleNavigation = (section: string) => {
     setCurrentSection(section);
-
-    // Handle known pages
-    if (section === "office-information") {
-      navigate("/office-information");
-      return;
-    }
-
-    // General Information page
-    if (section === "general-information") {
-      navigate("/general-information");
-      return;
-    }
-
-    // Children Information page
-    if (section === "children-information") {
-      navigate("/children-information");
-      return;
-    }
-
-    // Marital Status page
-    if (section === 'marital-status') {
-      navigate('/marital-status');
-      return;
-    }
-
-    // Educational Qualification 
-    if (section === 'educational-qualification') {
-      navigate('/educational-qualification');
-      return;
-    }
-
-    // Upload Files page
-    if (section === 'upload-files') {
-      navigate('/upload-files');
-      return;
-    }
-
-    // Notifications page
-    if (section === "notifications") {
-      navigate("/notifications");
-      return;
-    }
-
-    if (section === "security") {
-      navigate("/security");
-      return;
-    }
-
-    if (section === "settings") {
-      navigate("/settings");
-      return;
-    }
-
-    if (section === "logout") {
-      await signOut();
-      toast({
-        title: language === "bn" ? "লগ আউট" : "Logout",
-        description:
-          language === "bn"
-            ? "আপনি সফলভাবে লগ আউট হয়েছেন।"
-            : "You have been successfully logged out.",
-      });
-      navigate("/login");
-      return;
-    }
-
-    // Placeholder pages (not yet built)
-    toast({
-      title:
-        language === "bn"
-          ? `${getSectionTitle(section)} পেজটি এখনো তৈরি হয়নি`
-          : `${getSectionTitle(section)} page coming soon`,
-      description:
-        language === "bn"
-          ? "এই ফিচারটি শীঘ্রই যুক্ত হবে।"
-          : "This feature will be available soon.",
-    });
+    appNavigate(section, language);
   };
 
   // Cards

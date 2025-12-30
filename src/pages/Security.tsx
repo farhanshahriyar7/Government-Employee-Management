@@ -15,6 +15,7 @@ import { Loader2, Upload, Lock, FileText, User, Menu, Bell } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useAppNavigation } from "@/hooks/useAppNavigation";
 
 import Breadcrumbs from "@/components/ui/breadcrumb";
 
@@ -319,16 +320,8 @@ const Security = ({ language: initialLanguage = 'bn' }: SecurityProps) => {
     }
   };
 
-  const handleNavigate = (section: string) => {
-    if (section === 'logout') {
-      supabase.auth.signOut();
-      navigate('/login');
-    } else if (section === 'dashboard') {
-      navigate('/');
-    } else {
-      navigate(`/${section}`);
-    }
-  };
+  const { handleNavigate: appNavigate } = useAppNavigation();
+  const handleNavigate = (section: string) => appNavigate(section, language);
 
   const addPendingUpload = (item: PendingUpload) => {
     setPendingUploads(prev => [item, ...prev]);
@@ -665,7 +658,7 @@ const Security = ({ language: initialLanguage = 'bn' }: SecurityProps) => {
                 <Menu className="h-4 w-4" />
               </SidebarTrigger>
               <div className='flex items-center gap-1.5'>
-                <Breadcrumbs items={[{ label: language === 'bn' ? 'নিরাপত্তা' : 'Security'}]} />
+                <Breadcrumbs items={[{ label: language === 'bn' ? 'নিরাপত্তা' : 'Security' }]} />
               </div>
 
               <div className="flex-1" />
