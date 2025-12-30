@@ -56,6 +56,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { BreadcrumbList } from "@/components/ui/breadcrumb";
 import { supabase } from "@/integrations/supabase/client"; //backend integration
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"; //backend integration
+import { useAppNavigation } from "@/hooks/useAppNavigation";
 
 
 interface ChildInfo {
@@ -220,7 +221,7 @@ const ChildrenInformation = ({ language: initialLanguage }: ChildrenInformationP
         subtext: language === 'bn' ? 'অনুগ্রহ করে আপনার তথ্য সঠিক এবং সম্পূর্ণরূপে আপডেট করুন।' : 'Please update your information accurately and completely.',
         addNew: language === 'bn' ? '+ নতুন তথ্য' : '+ Add New Information',
         delete: language === 'bn' ? 'মুছুন' : 'Delete',
-    massDelete: language === 'bn' ? 'সব মুছুন' : 'Delete All',
+        massDelete: language === 'bn' ? 'সব মুছুন' : 'Delete All',
         download: language === 'bn' ? 'ডাউনলোড' : 'Download',
         fullName: language === 'bn' ? 'পূর্ণ নাম' : 'Full Name',
         birthDate: language === 'bn' ? 'জন্ম তারিখ' : 'Date of Birth',
@@ -245,29 +246,8 @@ const ChildrenInformation = ({ language: initialLanguage }: ChildrenInformationP
         addFirst: language === 'bn' ? 'প্রথম সন্তানের তথ্য যোগ করতে উপরের "+ নতুন তথ্য" বাটনে ক্লিক করুন।' : 'Click the "+ Add New Information" button above to add your first child\'s information.',
     };
 
-    const handleNavigation = async (section: string) => {
-        if (section === 'dashboard') { navigate('/'); return; }
-        if (section === 'general-information') { navigate('/general-information'); return; }
-        if (section === 'office-information') { navigate('/office-information'); return; }
-        if (section === 'marital-status') { navigate('/marital-status'); return; }
-        if (section === 'educational-qualification') { navigate('/educational-qualification'); return; }
-        if (section === 'upload-files') { navigate('/upload-files'); return; }
-        if (section === 'notifications') { navigate('/notifications'); return; }
-        if (section === 'security') { navigate('/security'); return; }
-        if (section === 'settings') { navigate('/settings'); return; }
-        if (section === 'logout') {
-            try {
-                await signOut();
-                toast({ title: language === 'bn' ? 'লগ আউট' : 'Logout', description: language === 'bn' ? 'আপনি সফলভাবে লগ আউট হয়েছেন।' : 'You have been successfully logged out.' });
-                navigate('/login');
-            } catch (err) {
-                toast({ title: language === 'bn' ? 'ত্রুটি' : 'Error', description: language === 'bn' ? 'লগ আউট করতে ব্যর্থ হয়েছে' : 'Failed to logout', variant: 'destructive' });
-            }
-            return;
-        }
-
-        toast({ title: language === 'bn' ? 'নির্মাণ চলছে' : 'Under Construction', description: language === 'bn' ? 'এই পেজটি শীঘ্রই উপলব্ধ হবে।' : 'This page will be available soon.' });
-    };
+    const { handleNavigate: appNavigate } = useAppNavigation();
+    const handleNavigation = (section: string) => appNavigate(section, language);
 
     const calculateAge = (birthDate: Date) => {
         const today = new Date();
@@ -651,29 +631,29 @@ const ChildrenInformation = ({ language: initialLanguage }: ChildrenInformationP
                                         {t.download}
                                     </Button> */}
                                 </div>
-                            {/* Delete All Confirmation Dialog */}
-                            <Dialog open={deleteConfirmOpen} onOpenChange={(open) => { if (!open) setDeleteConfirmOpen(false); }}>
-                                <DialogContent className="max-w-md">
-                                    <DialogHeader>
-                                        <DialogTitle>{language === 'bn' ? 'সব তথ্য মুছে ফেলবেন?' : 'Delete All Information?'}</DialogTitle>
-                                    </DialogHeader>
-                                    <div className="space-y-4">
-                                        <p className="text-lg font-medium">
-                                            {language === 'bn'
-                                                ? `আপনি কি নিশ্চিতভাবে ${children.length} টি তথ্য মুছে ফেলতে চান?`
-                                                : `Are you sure you want to delete all ${children.length} items?`}
-                                        </p>
-                                    </div>
-                                    <DialogFooter>
-                                        <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)} disabled={deleteAllLoading}>
-                                            {language === 'bn' ? 'বাতিল করুন' : 'Cancel'}
-                                        </Button>
-                                        <Button variant="destructive" onClick={confirmDeleteAll} disabled={deleteAllLoading}>
-                                            {language === 'bn' ? 'সব মুছুন' : 'Delete All'}
-                                        </Button>
-                                    </DialogFooter>
-                                </DialogContent>
-                            </Dialog>
+                                {/* Delete All Confirmation Dialog */}
+                                <Dialog open={deleteConfirmOpen} onOpenChange={(open) => { if (!open) setDeleteConfirmOpen(false); }}>
+                                    <DialogContent className="max-w-md">
+                                        <DialogHeader>
+                                            <DialogTitle>{language === 'bn' ? 'সব তথ্য মুছে ফেলবেন?' : 'Delete All Information?'}</DialogTitle>
+                                        </DialogHeader>
+                                        <div className="space-y-4">
+                                            <p className="text-lg font-medium">
+                                                {language === 'bn'
+                                                    ? `আপনি কি নিশ্চিতভাবে ${children.length} টি তথ্য মুছে ফেলতে চান?`
+                                                    : `Are you sure you want to delete all ${children.length} items?`}
+                                            </p>
+                                        </div>
+                                        <DialogFooter>
+                                            <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)} disabled={deleteAllLoading}>
+                                                {language === 'bn' ? 'বাতিল করুন' : 'Cancel'}
+                                            </Button>
+                                            <Button variant="destructive" onClick={confirmDeleteAll} disabled={deleteAllLoading}>
+                                                {language === 'bn' ? 'সব মুছুন' : 'Delete All'}
+                                            </Button>
+                                        </DialogFooter>
+                                    </DialogContent>
+                                </Dialog>
                             </div>
 
                             <Card className="overflow-hidden">

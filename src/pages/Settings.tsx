@@ -14,6 +14,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { CopyRights } from "@/components/CopyRights";
+import { useAppNavigation } from "@/hooks/useAppNavigation";
 
 import Breadcrumbs from "@/components/ui/breadcrumb";
 
@@ -53,83 +54,8 @@ export default function Settings({ language: initialLanguage }: SettingsProps) {
 
   const { signOut } = useAuth();
 
-  const handleNavigation = async (section: string) => {
-    if (section === 'dashboard') {
-      navigate('/');
-      return;
-    }
-
-    if (section === 'general-information') {
-      navigate('/general-information');
-      return;
-    }
-
-    if (section === 'office-information') {
-      navigate('/office-information');
-      return;
-    }
-
-    if (section === 'children-information') {
-      navigate('/children-information');
-      return;
-    }
-
-    if (section === 'marital-status') {
-      navigate('/marital-status');
-      return;
-    }
-
-    if (section === 'educational-qualification') {
-      navigate('/educational-qualification');
-      return;
-    }
-
-    if (section === 'upload-files') {
-      navigate('/upload-files');
-      return;
-    }
-
-
-    if (section === "notifications") {
-      navigate("/notifications");
-      return;
-    }
-
-    if (section === "security") {
-      navigate("/security");
-      return;
-    }
-
-    if (section === 'logout') {
-      try {
-        await signOut();
-
-        toast({
-          title: language === 'bn' ? 'লগ আউট' : 'Logout',
-          description:
-            language === 'bn'
-              ? 'আপনি সফলভাবে লগ আউট হয়েছেন।'
-              : 'You have been successfully logged out.',
-        });
-
-        navigate('/login');
-      } catch (error) {
-        console.error('Logout error:', error);
-        toast({
-          title: language === 'bn' ? 'ত্রুটি' : 'Error',
-          description: language === 'bn' ? 'লগ আউট করতে ব্যর্থ হয়েছে' : 'Failed to logout',
-          variant: 'destructive',
-        });
-      }
-
-      return;
-    }
-
-    toast({
-      title: language === 'bn' ? 'শীঘ্রই আসছে' : 'Coming Soon',
-      description: language === 'bn' ? 'এই পেজটি শীঘ্রই উপলব্ধ হবে।' : 'This page will be available soon.',
-    });
-  };
+  const { handleNavigate: appNavigate } = useAppNavigation();
+  const handleNavigation = (section: string) => appNavigate(section, language);
 
   useEffect(() => {
     if (user) {

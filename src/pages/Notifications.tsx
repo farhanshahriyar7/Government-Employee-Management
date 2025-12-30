@@ -28,6 +28,7 @@ import { useToast } from '@/hooks/use-toast';
 // import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import * as XLSX from "xlsx";
+import { useAppNavigation } from "@/hooks/useAppNavigation";
 
 interface ActivityLog {
   id: string;
@@ -201,67 +202,8 @@ const Notifications = ({ language }: { language: "en" | "bn" }) => {
     XLSX.writeFile(workbook, `activity_logs_${new Date().toISOString().split("T")[0]}.xlsx`);
   };
 
-  const handleNavigation = async (section: string) => {
-    if (section === 'dashboard') {
-      navigate('/');
-      return;
-    }
-
-    if (section === 'office-information') {
-      navigate('/office-information');
-      return;
-    }
-
-    if (section === 'general-information') {
-      navigate('/general-information');
-      return;
-    }
-
-    if (section === 'children-information') {
-      navigate('/children-information');
-      return;
-    }
-
-    if (section === 'marital-status') {
-      navigate('/marital-status');
-      return;
-    }
-
-    if (section === 'educational-qualification') {
-      navigate('/educational-qualification');
-      return;
-    }
-
-    if (section === 'upload-files') {
-      navigate('/upload-files');
-      return;
-    }
-
-
-    if (section === 'security') {
-      navigate('/security');
-      return;
-    }
-    if (section === 'settings') {
-      navigate('/settings');
-      return;
-    }
-    if (section === 'logout') {
-      try {
-        await signOut();
-        toast({
-          title: language === 'bn' ? 'লগ আউট' : 'Logout',
-          description: language === 'bn' ? 'আপনি সফলভাবে লগআউট হয়েছেন' : 'You have been successfully logged out.',
-        });
-        navigate('/login');
-      } catch (err) {
-        toast({ title: language === 'bn' ? 'ত্রুটি' : 'Error', description: language === 'bn' ? 'লগআউট বিফল' : 'Failed to logout', variant: 'destructive' });
-      }
-      return;
-    }
-
-    toast({ title: language === 'bn' ? 'শীঘ্রই আসছে' : 'Coming Soon', description: language === 'bn' ? 'এই পেজটি শীঘ্রই উপলব্ধ হবে।' : 'This page will be available soon.' });
-  };
+  const { handleNavigate: appNavigate } = useAppNavigation();
+  const handleNavigation = (section: string) => appNavigate(section, language);
 
   return (
     <SidebarProvider>

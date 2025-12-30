@@ -9,7 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { Menu, Upload, FileText, Image, FileArchive, Trash2, Download, Bell, Eye, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Progress } from "@/components/ui/progress";
-import { supabase } from '@/lib/supabaseClient';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Pagination,
   PaginationContent,
@@ -33,6 +33,7 @@ import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { CopyRights } from "@/components/CopyRights";
+import { useAppNavigation } from "@/hooks/useAppNavigation";
 
 interface UploadFilesProps {
   language?: 'bn' | 'en';
@@ -114,7 +115,7 @@ export default function UploadFiles({ language: initialLanguage = 'en' }: Upload
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleFiles(e.dataTransfer.files);
     }
@@ -130,7 +131,7 @@ export default function UploadFiles({ language: initialLanguage = 'en' }: Upload
     if (!ALLOWED_FILE_TYPES.includes(file.type)) {
       return {
         valid: false,
-        error: language === 'bn' 
+        error: language === 'bn'
           ? 'শুধুমাত্র PDF, JPG, JPEG এবং PNG ফাইল আপলোড করা যাবে'
           : 'Only PDF, JPG, JPEG and PNG files are allowed'
       };
@@ -296,18 +297,19 @@ export default function UploadFiles({ language: initialLanguage = 'en' }: Upload
 
         // Insert metadata into DB
         try {
-            const record = {
-              id: (typeof crypto !== 'undefined' && (crypto as any).randomUUID) ? (crypto as any).randomUUID() : `id-${Date.now()}-${i}`,
-              user_id: currentUserId,
-              name: uf.name,
-              path: path,
-              size: uf.sizeBytes ?? 0,
-              content_type: uf.type,
-              bucket: 'uploads',
-              uploaded_at: new Date().toISOString()
-            } as any;
+          const record = {
+            id: (typeof crypto !== 'undefined' && (crypto as any).randomUUID) ? (crypto as any).randomUUID() : `id-${Date.now()}-${i}`,
+            user_id: currentUserId,
+            name: uf.name,
+            path: path,
+            size: uf.sizeBytes ?? 0,
+            content_type: uf.type,
+            bucket: 'uploads',
+            uploaded_at: new Date().toISOString()
+          } as any;
 
-          const { error: insertError } = await supabase.from('uploaded_files').insert(record);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { error: insertError } = await (supabase as any).from('uploaded_files').insert(record);
           if (insertError) {
             // non-fatal: notify and continue
             console.error('DB insert error', insertError);
@@ -364,7 +366,8 @@ export default function UploadFiles({ language: initialLanguage = 'en' }: Upload
     let mounted = true;
     const fetchUploads = async () => {
       try {
-        const { data, error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data, error } = await (supabase as any)
           .from('uploaded_files')
           .select('id, name, path, size, content_type, uploaded_at')
           .order('uploaded_at', { ascending: false })
@@ -452,9 +455,11 @@ export default function UploadFiles({ language: initialLanguage = 'en' }: Upload
       try {
         let dbDelete;
         if (path) {
-          dbDelete = await supabase.from('uploaded_files').delete().eq('path', path);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          dbDelete = await (supabase as any).from('uploaded_files').delete().eq('path', path);
         } else {
-          dbDelete = await supabase.from('uploaded_files').delete().eq('id', file.id);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          dbDelete = await (supabase as any).from('uploaded_files').delete().eq('id', file.id);
         }
 
         if ((dbDelete as any).error) {
@@ -616,18 +621,13 @@ export default function UploadFiles({ language: initialLanguage = 'en' }: Upload
     return <FileText className="h-5 w-5" />;
   };
 
+  const { handleNavigate: appNavigate } = useAppNavigation();
+  const handleNavigate = (section: string) => appNavigate(section, language);
+
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background">
-        <AppSidebar language={language} onNavigate={(section) => {
-          if (section === 'logout') {
-            navigate('/login');
-          } else if (section === 'dashboard') {
-            navigate('/');
-          } else {
-            navigate(`/${section}`);
-          }
-        }} />
+        <AppSidebar language={language} onNavigate={handleNavigate} />
 
         <SidebarInset className="flex-1">
           <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
@@ -636,7 +636,7 @@ export default function UploadFiles({ language: initialLanguage = 'en' }: Upload
                 <Menu className="h-4 w-4" />
               </SidebarTrigger>
 
-               <Breadcrumb>
+              <Breadcrumb>
                 <BreadcrumbList>
                   <BreadcrumbItem>
                     <BreadcrumbLink asChild>
@@ -675,225 +675,224 @@ export default function UploadFiles({ language: initialLanguage = 'en' }: Upload
 
           <main className="flex-1 overflow-auto p-6">
             <div className="max-w-7xl mx-auto space-y-6">
-            {/* Header with Breadcrumb */}
-            <div className="flex items-center gap-4 mb-6">
-              <SidebarTrigger className="md:hidden">
-                <Menu className="h-4 w-4" />
-              </SidebarTrigger>
+              {/* Header with Breadcrumb */}
+              <div className="flex items-center gap-4 mb-6">
+                <SidebarTrigger className="md:hidden">
+                  <Menu className="h-4 w-4" />
+                </SidebarTrigger>
 
-            </div>
+              </div>
 
-            {/* Upload Area */}
-            <Card>
-              <CardHeader>
-                <CardTitle>{t.title}</CardTitle>
-                <CardDescription>{t.subtitle}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div
-                  className={`border-2 border-dashed rounded-lg p-12 text-center transition-colors ${
-                    dragActive 
-                      ? 'border-primary bg-primary/5' 
+              {/* Upload Area */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>{t.title}</CardTitle>
+                  <CardDescription>{t.subtitle}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div
+                    className={`border-2 border-dashed rounded-lg p-12 text-center transition-colors ${dragActive
+                      ? 'border-primary bg-primary/5'
                       : 'border-border hover:border-primary/50'
-                  }`}
-                  onDragEnter={handleDrag}
-                  onDragLeave={handleDrag}
-                  onDragOver={handleDrag}
-                  onDrop={handleDrop}
-                >
-                  <div className="flex flex-col items-center gap-4">
-                    <div className="p-4 rounded-full bg-primary/10">
-                      <Upload className="h-8 w-8 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-lg font-medium mb-2">{t.uploadArea}</p>
-                      <p className="text-sm text-muted-foreground">{t.maxSize}</p>
-                    </div>
-                    <Label htmlFor="file-upload">
-                      <Button variant="outline" className="cursor-pointer" asChild>
-                        <span>{t.browseFiles}</span>
-                      </Button>
-                      <Input
-                        id="file-upload"
-                        type="file"
-                        multiple
-                        className="hidden"
-                        onChange={handleFileInput}
-                      />
-                    </Label>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Uploaded Files List */}
-            <Card>
-              <CardHeader>
-                <CardTitle>{t.uploadedFiles}</CardTitle>
-                <CardDescription>
-                  {uploadedFiles.length === 0 ? t.noFiles : `${uploadedFiles.length} file(s)`}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {uploading && (
-                  <div className="mb-4">
-                    <Progress value={overallProgress} className="h-2" />
-                    <p className="text-sm text-muted-foreground mt-2">
-                      {language === 'bn' 
-                        ? `আপলোড হচ্ছে... ${overallProgress}%`
-                        : `Uploading... ${overallProgress}%`}
-                    </p>
-                  </div>
-                )}
-                {uploadedFiles.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>{t.noFiles}</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {/* Paginate: show latest files first (uploadedFiles already prepends) */}
-                    {uploadedFiles
-                      .slice()
-                      .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-                      .map((file) => (
-                      <div
-                        key={file.id}
-                        className="flex items-center gap-4 p-4 border rounded-lg hover:bg-accent/50 transition-colors"
-                      >
-                        <div className="text-primary">
-                          {getFileIcon(file.type)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">{file.name}</p>
-                          <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                            <span>{file.size}</span>
-                            <span>•</span>
-                            <span>{file.uploadedAt}</span>
-                          </div>
-                        </div>
-                        <div className="flex flex-col gap-2">
-                          {file.uploadProgress && file.uploadProgress.status !== 'completed' && (
-                            <div className="w-[100px]">
-                              <Progress value={file.uploadProgress.progress} className="h-2" />
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {file.uploadProgress.progress}%
-                              </p>
-                            </div>
-                          )}
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0"
-                              title={t.download}
-                              onClick={() => handleDownload(file)}
-                              disabled={downloadingFile === file.id || (file.uploadProgress && file.uploadProgress.status !== 'completed')}
-                            >
-                              {downloadingFile === file.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Download className="h-4 w-4" />
-                              )}
-                            </Button>
-                            {/* Preview eye icon placed to the left of download (as requested) */}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0"
-                              title={language === 'bn' ? 'পূর্বরূপ' : 'Preview'}
-                              onClick={() => openPreview(file)}
-                              disabled={file.uploadProgress && file.uploadProgress.status !== 'completed'}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                              onClick={() => {
-                                // open confirmation dialog
-                                setFileToDelete(file);
-                                setConfirmOpen(true);
-                              }}
-                              title={t.delete}
-                              disabled={
-                                (file.uploadProgress && file.uploadProgress.status === 'uploading') ||
-                                deletingFile === file.id
-                              }
-                            >
-                              {deletingFile === file.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Trash2 className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                    {/* Pagination controls */}
-                    {uploadedFiles.length > itemsPerPage && (
-                      <div className="flex justify-center mt-2">
-                        <Pagination>
-                          <PaginationContent>
-                            <PaginationItem>
-                              <PaginationPrevious onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} />
-                            </PaginationItem>
-                            {/* Simple numbered pages */}
-                            {Array.from({ length: Math.ceil(uploadedFiles.length / itemsPerPage) }).map((_, i) => (
-                              <PaginationItem key={i}>
-                                <PaginationLink
-                                  isActive={currentPage === i + 1}
-                                  onClick={() => setCurrentPage(i + 1)}
-                                >
-                                  {i + 1}
-                                </PaginationLink>
-                              </PaginationItem>
-                            ))}
-                            <PaginationItem>
-                              <PaginationNext onClick={() => setCurrentPage((p) => Math.min(Math.ceil(uploadedFiles.length / itemsPerPage), p + 1))} />
-                            </PaginationItem>
-                          </PaginationContent>
-                        </Pagination>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Confirmation Dialog for delete */}
-            <Dialog open={confirmOpen} onOpenChange={(open) => { if (!open) { setFileToDelete(null); } setConfirmOpen(open); }}>
-              <DialogContent className="max-w-md">
-                <DialogHeader>
-                  <DialogTitle>{language === 'bn' ? 'নিশ্চিত করুন' : 'Confirm delete'}</DialogTitle>
-                  <DialogDescription>
-                    {language === 'bn'
-                      ? 'আপনি কি নিশ্চিত যে এই ফাইলটি সম্পূর্ণ মুছে ফেলতে চান? এটি সার্ভার থেকে পুনরুদ্ধারযোগ্য নয়।'
-                      : 'Are you sure you want to permanently delete this file? This cannot be undone.'}
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="mt-4 flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => { setConfirmOpen(false); setFileToDelete(null); }}>{language === 'bn' ? 'বাতিল' : 'Cancel'}</Button>
-                  <Button
-                    variant="destructive"
-                    onClick={() => fileToDelete && performDelete(fileToDelete)}
-                    disabled={deletingFile === fileToDelete?.id}
+                      }`}
+                    onDragEnter={handleDrag}
+                    onDragLeave={handleDrag}
+                    onDragOver={handleDrag}
+                    onDrop={handleDrop}
                   >
-                    {deletingFile === fileToDelete?.id ? <Loader2 className="h-4 w-4 animate-spin" /> : (language === 'bn' ? 'মুছুন' : 'Delete')}
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="p-4 rounded-full bg-primary/10">
+                        <Upload className="h-8 w-8 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-lg font-medium mb-2">{t.uploadArea}</p>
+                        <p className="text-sm text-muted-foreground">{t.maxSize}</p>
+                      </div>
+                      <Label htmlFor="file-upload">
+                        <Button variant="outline" className="cursor-pointer" asChild>
+                          <span>{t.browseFiles}</span>
+                        </Button>
+                        <Input
+                          id="file-upload"
+                          type="file"
+                          multiple
+                          className="hidden"
+                          onChange={handleFileInput}
+                        />
+                      </Label>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-            {/* Preview Dialog */}
-            <Dialog open={previewOpen} onOpenChange={(open) => { if (!open) setPreviewFile(null); setPreviewOpen(open); }}>
-              {previewFile && (
-                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              {/* Uploaded Files List */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>{t.uploadedFiles}</CardTitle>
+                  <CardDescription>
+                    {uploadedFiles.length === 0 ? t.noFiles : `${uploadedFiles.length} file(s)`}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {uploading && (
+                    <div className="mb-4">
+                      <Progress value={overallProgress} className="h-2" />
+                      <p className="text-sm text-muted-foreground mt-2">
+                        {language === 'bn'
+                          ? `আপলোড হচ্ছে... ${overallProgress}%`
+                          : `Uploading... ${overallProgress}%`}
+                      </p>
+                    </div>
+                  )}
+                  {uploadedFiles.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>{t.noFiles}</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {/* Paginate: show latest files first (uploadedFiles already prepends) */}
+                      {uploadedFiles
+                        .slice()
+                        .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                        .map((file) => (
+                          <div
+                            key={file.id}
+                            className="flex items-center gap-4 p-4 border rounded-lg hover:bg-accent/50 transition-colors"
+                          >
+                            <div className="text-primary">
+                              {getFileIcon(file.type)}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium truncate">{file.name}</p>
+                              <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                                <span>{file.size}</span>
+                                <span>•</span>
+                                <span>{file.uploadedAt}</span>
+                              </div>
+                            </div>
+                            <div className="flex flex-col gap-2">
+                              {file.uploadProgress && file.uploadProgress.status !== 'completed' && (
+                                <div className="w-[100px]">
+                                  <Progress value={file.uploadProgress.progress} className="h-2" />
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    {file.uploadProgress.progress}%
+                                  </p>
+                                </div>
+                              )}
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0"
+                                  title={t.download}
+                                  onClick={() => handleDownload(file)}
+                                  disabled={downloadingFile === file.id || (file.uploadProgress && file.uploadProgress.status !== 'completed')}
+                                >
+                                  {downloadingFile === file.id ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Download className="h-4 w-4" />
+                                  )}
+                                </Button>
+                                {/* Preview eye icon placed to the left of download (as requested) */}
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0"
+                                  title={language === 'bn' ? 'পূর্বরূপ' : 'Preview'}
+                                  onClick={() => openPreview(file)}
+                                  disabled={file.uploadProgress && file.uploadProgress.status !== 'completed'}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                  onClick={() => {
+                                    // open confirmation dialog
+                                    setFileToDelete(file);
+                                    setConfirmOpen(true);
+                                  }}
+                                  title={t.delete}
+                                  disabled={
+                                    (file.uploadProgress && file.uploadProgress.status === 'uploading') ||
+                                    deletingFile === file.id
+                                  }
+                                >
+                                  {deletingFile === file.id ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      {/* Pagination controls */}
+                      {uploadedFiles.length > itemsPerPage && (
+                        <div className="flex justify-center mt-2">
+                          <Pagination>
+                            <PaginationContent>
+                              <PaginationItem>
+                                <PaginationPrevious onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} />
+                              </PaginationItem>
+                              {/* Simple numbered pages */}
+                              {Array.from({ length: Math.ceil(uploadedFiles.length / itemsPerPage) }).map((_, i) => (
+                                <PaginationItem key={i}>
+                                  <PaginationLink
+                                    isActive={currentPage === i + 1}
+                                    onClick={() => setCurrentPage(i + 1)}
+                                  >
+                                    {i + 1}
+                                  </PaginationLink>
+                                </PaginationItem>
+                              ))}
+                              <PaginationItem>
+                                <PaginationNext onClick={() => setCurrentPage((p) => Math.min(Math.ceil(uploadedFiles.length / itemsPerPage), p + 1))} />
+                              </PaginationItem>
+                            </PaginationContent>
+                          </Pagination>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Confirmation Dialog for delete */}
+              <Dialog open={confirmOpen} onOpenChange={(open) => { if (!open) { setFileToDelete(null); } setConfirmOpen(open); }}>
+                <DialogContent className="max-w-md">
                   <DialogHeader>
-                    <DialogTitle>{previewFile.name}</DialogTitle>
-                    <DialogDescription className="truncate">{previewFile.size} • {previewFile.uploadedAt}</DialogDescription>
+                    <DialogTitle>{language === 'bn' ? 'নিশ্চিত করুন' : 'Confirm delete'}</DialogTitle>
+                    <DialogDescription>
+                      {language === 'bn'
+                        ? 'আপনি কি নিশ্চিত যে এই ফাইলটি সম্পূর্ণ মুছে ফেলতে চান? এটি সার্ভার থেকে পুনরুদ্ধারযোগ্য নয়।'
+                        : 'Are you sure you want to permanently delete this file? This cannot be undone.'}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="mt-4 flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => { setConfirmOpen(false); setFileToDelete(null); }}>{language === 'bn' ? 'বাতিল' : 'Cancel'}</Button>
+                    <Button
+                      variant="destructive"
+                      onClick={() => fileToDelete && performDelete(fileToDelete)}
+                      disabled={deletingFile === fileToDelete?.id}
+                    >
+                      {deletingFile === fileToDelete?.id ? <Loader2 className="h-4 w-4 animate-spin" /> : (language === 'bn' ? 'মুছুন' : 'Delete')}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              {/* Preview Dialog */}
+              <Dialog open={previewOpen} onOpenChange={(open) => { if (!open) setPreviewFile(null); setPreviewOpen(open); }}>
+                {previewFile && (
+                  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>{previewFile.name}</DialogTitle>
+                      <DialogDescription className="truncate">{previewFile.size} • {previewFile.uploadedAt}</DialogDescription>
                       <div className="flex items-center gap-2">
                         <Button
                           variant="outline"
@@ -907,37 +906,37 @@ export default function UploadFiles({ language: initialLanguage = 'en' }: Upload
                         </Button>
                       </div>
                     </DialogHeader>
-                  <div className="mt-4">
-                    {!previewFile.previewUrl ? (
-                      <div className="text-center text-muted-foreground py-8">
-                        {language === 'bn' ? 'পূর্বরূপ উপলব্ধ নেই' : 'Preview not available'}
-                      </div>
-                    ) : previewFile.type.startsWith('image/') ? (
-                      <img 
-                        src={previewFile.previewUrl} 
-                        alt={previewFile.name} 
-                        className="mx-auto max-h-[60vh] object-contain" 
-                      />
-                    ) : previewFile.type === 'application/pdf' ? (
-                      <object
-                        data={previewFile.previewUrl}
-                        type="application/pdf"
-                        className="w-full h-[60vh]"
-                      >
+                    <div className="mt-4">
+                      {!previewFile.previewUrl ? (
                         <div className="text-center text-muted-foreground py-8">
-                          {language === 'bn' ? 'পিডিএফ দেখার জন্য পিডিএফ ভিউয়ার প্রয়োজন' : 'PDF viewer is required to view this file'}
+                          {language === 'bn' ? 'পূর্বরূপ উপলব্ধ নেই' : 'Preview not available'}
                         </div>
-                      </object>
-                    ) : (
-                      <div className="text-center text-muted-foreground py-8">
-                        {language === 'bn' ? 'পূর্বরূপ উপলব্ধ নেই' : 'Preview not available'}
-                      </div>
-                    )}
-                  </div>
-                </DialogContent>
-              )}
-            </Dialog>
-          </div>
+                      ) : previewFile.type.startsWith('image/') ? (
+                        <img
+                          src={previewFile.previewUrl}
+                          alt={previewFile.name}
+                          className="mx-auto max-h-[60vh] object-contain"
+                        />
+                      ) : previewFile.type === 'application/pdf' ? (
+                        <object
+                          data={previewFile.previewUrl}
+                          type="application/pdf"
+                          className="w-full h-[60vh]"
+                        >
+                          <div className="text-center text-muted-foreground py-8">
+                            {language === 'bn' ? 'পিডিএফ দেখার জন্য পিডিএফ ভিউয়ার প্রয়োজন' : 'PDF viewer is required to view this file'}
+                          </div>
+                        </object>
+                      ) : (
+                        <div className="text-center text-muted-foreground py-8">
+                          {language === 'bn' ? 'পূর্বরূপ উপলব্ধ নেই' : 'Preview not available'}
+                        </div>
+                      )}
+                    </div>
+                  </DialogContent>
+                )}
+              </Dialog>
+            </div>
           </main>
 
           <footer className="border-t border-border bg-card/50 py-4 px-6 text-center">
