@@ -21,6 +21,7 @@ import { QuickStats } from "@/components/QuickStats";
 import { DashboardCard } from "@/components/DashboardCard";
 import { CopyRights } from "@/components/CopyRights";
 import { useAppNavigation } from "@/hooks/useAppNavigation";
+import { useActivityCount } from "@/hooks/useActivityCount";
 
 const Index = () => {
   const [language, setLanguage] = useState<'bn' | 'en'>('bn');
@@ -28,6 +29,7 @@ const Index = () => {
   const { toast } = useToast();
   const { signOut } = useAuth();
   const navigate = useNavigate();
+  const { count: notificationCount } = useActivityCount();
 
   // Title translation helper
   const getSectionTitle = (section: string) => {
@@ -118,7 +120,7 @@ const Index = () => {
       <div className="min-h-screen w-full bg-green-200 dark:bg-background flex flex-col">
         <div className="flex flex-1">
           {/* Sidebar */}
-          <AppSidebar language={language} onNavigate={handleNavigation} />
+          <AppSidebar language={language} onNavigate={handleNavigation} notificationCount={notificationCount} />
 
           {/* Main Content */}
           <SidebarInset className="flex-1">
@@ -162,7 +164,11 @@ const Index = () => {
                     className="relative"
                   >
                     <Bell className="h-4 w-4" />
-                    <span className="absolute -top-1 -right-1 h-3 w-3 bg-destructive rounded-full" />
+                    {notificationCount > 0 && (
+                      <span className="absolute -top-1 -right-1 px-1 min-w-[16px] h-4 text-[10px] font-medium bg-destructive text-destructive-foreground rounded-full flex items-center justify-center">
+                        {notificationCount > 99 ? '99+' : notificationCount}
+                      </span>
+                    )}
                   </Button>
                   <LanguageToggle
                     onLanguageChange={setLanguage}

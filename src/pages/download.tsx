@@ -585,7 +585,7 @@ export default function DownloadPage({ language: initialLanguage }: DownloadProp
                                             <p>{t.s1_d} : {office?.nid || '----------------'}</p>
                                             <p>{t.s1_e} : {office?.tin || '----------------'}</p>
                                             <p>
-                                                {t.s1_f} {office?.birth_place || '----------------'} {t.s1_f_village} {office?.village || '----------------'} {t.s1_f_upazila} {office?.upazila || '----------------'} {t.s1_f_district} {office?.district || '----------------'}
+                                                {t.s1_f} : {office?.birth_place || '----------------'} <br /> {t.s1_f_village} : {office?.village || '----------------'} <br /> {t.s1_f_upazila} : {office?.upazila || '----------------'} <br /> {t.s1_f_district} : {office?.district || '----------------'}
                                             </p>
                                         </div>
                                     </div>

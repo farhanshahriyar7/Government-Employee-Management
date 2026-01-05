@@ -4,8 +4,7 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/s
 import { AppSidebar } from "@/components/AppSidebar";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageToggle } from "@/components/LanguageToggle";
-import { WelcomeHeader } from "@/components/WelcomeHeader";
-import { Bell, Filter, Download, Menu } from "lucide-react";
+import { Bell, Filter, Download, Menu, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Breadcrumbs from "@/components/ui/breadcrumb";
 import {
@@ -25,18 +24,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from '@/hooks/use-toast';
-// import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import * as XLSX from "xlsx";
 import { useAppNavigation } from "@/hooks/useAppNavigation";
+import { useActivityCount } from "@/hooks/useActivityCount";
 
 interface ActivityLog {
   id: string;
   action_type: string;
   action_description: string;
-  entity_type?: string;
+  entity_type: string;
   entity_id?: string;
-  metadata?: any;
   created_at: string;
 }
 
@@ -64,10 +63,42 @@ const Notifications = ({ language }: { language: "en" | "bn" }) => {
       noLogs: "No activity logs found",
       create: "Created",
       update: "Updated",
-      delete: "Deleted",
-      view: "Viewed",
-      login: "Login",
-      logout: "Logout",
+      loading: "Loading activities...",
+      // Entity type labels
+      profile: "Profile",
+      general_information: "General Info",
+      office_information: "Office Info",
+      marital_information: "Marital Status",
+      children_information: "Children Info",
+      educational_qualifications: "Education",
+      domestic_trainings: "Domestic Training",
+      foreign_trainings: "Foreign Training",
+      foreign_travels: "Foreign Travel",
+      foreign_postings: "Foreign Posting",
+      lien_deputations: "Lien/Deputation",
+      // Action descriptions
+      created_profile: "Created profile",
+      updated_profile: "Updated profile",
+      created_general_information: "Added general information",
+      updated_general_information: "Updated general information",
+      created_office_information: "Added office information",
+      updated_office_information: "Updated office information",
+      created_marital_information: "Added marital information",
+      updated_marital_information: "Updated marital information",
+      created_children_information: "Added children information",
+      updated_children_information: "Updated children information",
+      created_educational_qualifications: "Added educational qualification",
+      updated_educational_qualifications: "Updated educational qualification",
+      created_domestic_trainings: "Added domestic training",
+      updated_domestic_trainings: "Updated domestic training",
+      created_foreign_trainings: "Added foreign training",
+      updated_foreign_trainings: "Updated foreign training",
+      created_foreign_travels: "Added foreign travel record",
+      updated_foreign_travels: "Updated foreign travel record",
+      created_foreign_postings: "Added foreign posting",
+      updated_foreign_postings: "Updated foreign posting",
+      created_lien_deputations: "Added lien/deputation",
+      updated_lien_deputations: "Updated lien/deputation",
     },
     bn: {
       title: "কার্যক্রম লগ",
@@ -82,18 +113,58 @@ const Notifications = ({ language }: { language: "en" | "bn" }) => {
       noLogs: "কোনো কার্যক্রম লগ পাওয়া যায়নি",
       create: "তৈরি করা হয়েছে",
       update: "আপডেট করা হয়েছে",
-      delete: "মুছে ফেলা হয়েছে",
-      view: "দেখা হয়েছে",
-      login: "লগইন",
-      logout: "লগআউট",
+      loading: "কার্যক্রম লোড হচ্ছে...",
+      // Entity type labels
+      profile: "প্রোফাইল",
+      general_information: "সাধারণ তথ্য",
+      office_information: "দাপ্তরিক তথ্য",
+      marital_information: "বৈবাহিক অবস্থা",
+      children_information: "সন্তানদের তথ্য",
+      educational_qualifications: "শিক্ষাগত যোগ্যতা",
+      domestic_trainings: "দেশীয় প্রশিক্ষণ",
+      foreign_trainings: "বিদেশী প্রশিক্ষণ",
+      foreign_travels: "বিদেশ ভ্রমণ",
+      foreign_postings: "বিদেশী পোস্টিং",
+      lien_deputations: "লিয়েন/প্রেষণ",
+      // Action descriptions
+      created_profile: "প্রোফাইল তৈরি করা হয়েছে",
+      updated_profile: "প্রোফাইল আপডেট করা হয়েছে",
+      created_general_information: "সাধারণ তথ্য যোগ করা হয়েছে",
+      updated_general_information: "সাধারণ তথ্য আপডেট করা হয়েছে",
+      created_office_information: "দাপ্তরিক তথ্য যোগ করা হয়েছে",
+      updated_office_information: "দাপ্তরিক তথ্য আপডেট করা হয়েছে",
+      created_marital_information: "বৈবাহিক তথ্য যোগ করা হয়েছে",
+      updated_marital_information: "বৈবাহিক তথ্য আপডেট করা হয়েছে",
+      created_children_information: "সন্তানদের তথ্য যোগ করা হয়েছে",
+      updated_children_information: "সন্তানদের তথ্য আপডেট করা হয়েছে",
+      created_educational_qualifications: "শিক্ষাগত যোগ্যতা যোগ করা হয়েছে",
+      updated_educational_qualifications: "শিক্ষাগত যোগ্যতা আপডেট করা হয়েছে",
+      created_domestic_trainings: "দেশীয় প্রশিক্ষণ যোগ করা হয়েছে",
+      updated_domestic_trainings: "দেশীয় প্রশিক্ষণ আপডেট করা হয়েছে",
+      created_foreign_trainings: "বিদেশী প্রশিক্ষণ যোগ করা হয়েছে",
+      updated_foreign_trainings: "বিদেশী প্রশিক্ষণ আপডেট করা হয়েছে",
+      created_foreign_travels: "বিদেশ ভ্রমণ রেকর্ড যোগ করা হয়েছে",
+      updated_foreign_travels: "বিদেশ ভ্রমণ রেকর্ড আপডেট করা হয়েছে",
+      created_foreign_postings: "বিদেশী পোস্টিং যোগ করা হয়েছে",
+      updated_foreign_postings: "বিদেশী পোস্টিং আপডেট করা হয়েছে",
+      created_lien_deputations: "লিয়েন/প্রেষণ যোগ করা হয়েছে",
+      updated_lien_deputations: "লিয়েন/প্রেষণ আপডেট করা হয়েছে",
     },
   };
 
   const t = translations[language];
 
+  // Mark activities as seen and get count for sidebar badge
+  const { count: notificationCount, markAsSeen } = useActivityCount();
+
   useEffect(() => {
-    fetchActivityLogs();
-  }, []);
+    if (user) {
+      fetchActivityLogs();
+      // Mark all activities as seen when visiting this page
+      markAsSeen();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   useEffect(() => {
     if (filterType === "all") {
@@ -104,55 +175,108 @@ const Notifications = ({ language }: { language: "en" | "bn" }) => {
   }, [filterType, activityLogs]);
 
   const fetchActivityLogs = async () => {
+    if (!user) return;
     setLoading(true);
+
     try {
-      // BACKEND INTEGRATION - Uncomment when SQL is pushed
-      // const { data, error } = await supabase
-      //   .from("activity_logs")
-      //   .select("*")
-      //   .eq("user_id", user?.id)
-      //   .order("created_at", { ascending: false });
+      const activities: ActivityLog[] = [];
 
-      // if (error) throw error;
-      // setActivityLogs(data || []);
-      // setFilteredLogs(data || []);
+      // Helper to create activity from record
+      const createActivity = (
+        record: { id: string; created_at: string; updated_at?: string | null },
+        entityType: string
+      ) => {
+        const isUpdate = record.updated_at && record.updated_at !== record.created_at;
+        const actionType = isUpdate ? 'update' : 'create';
+        const descKey = `${actionType}d_${entityType}` as keyof typeof t;
 
-      // Mock data for demonstration
-      const mockData: ActivityLog[] = [
-        {
-          id: "1",
-          action_type: "create",
-          action_description: "Created new general information record",
-          entity_type: "general_information",
-          created_at: new Date().toISOString(),
-        },
-        {
-          id: "2",
-          action_type: "update",
-          action_description: "Updated office information",
-          entity_type: "office_information",
-          created_at: new Date(Date.now() - 3600000).toISOString(),
-        },
-        {
-          id: "3",
-          action_type: "view",
-          action_description: "Viewed profile settings",
-          entity_type: "profile",
-          created_at: new Date(Date.now() - 7200000).toISOString(),
-        },
-        {
-          id: "4",
-          action_type: "login",
-          action_description: "User logged in",
-          entity_type: "auth",
-          created_at: new Date(Date.now() - 86400000).toISOString(),
-        },
-      ];
+        return {
+          id: `${entityType}-${record.id}`,
+          action_type: actionType,
+          action_description: t[descKey] || `${actionType}d ${entityType.replace(/_/g, ' ')}`,
+          entity_type: entityType,
+          entity_id: record.id,
+          created_at: isUpdate ? record.updated_at! : record.created_at,
+        };
+      };
 
-      setActivityLogs(mockData);
-      setFilteredLogs(mockData);
+      // Fetch from all tables in parallel
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const s = supabase as any;
+
+      const [
+        profileRes,
+        generalRes,
+        officeRes,
+        maritalRes,
+        childrenRes,
+        educationRes,
+        domesticRes,
+        foreignTrainingRes,
+        foreignTravelRes,
+        foreignPostingRes,
+        lienRes,
+      ] = await Promise.all([
+        s.from('profiles').select('id, created_at, updated_at').eq('id', user.id),
+        s.from('general_information').select('id, created_at, updated_at').eq('user_id', user.id),
+        s.from('office_information').select('id, created_at, updated_at').eq('user_id', user.id),
+        s.from('marital_information').select('id, created_at, updated_at').eq('user_id', user.id),
+        s.from('children_information').select('id, created_at, updated_at').eq('user_id', user.id),
+        s.from('educational_qualifications').select('id, created_at, updated_at').eq('user_id', user.id),
+        s.from('domestic_trainings').select('id, created_at, updated_at').eq('user_id', user.id),
+        s.from('foreign_trainings').select('id, created_at, updated_at').eq('user_id', user.id),
+        s.from('foreign_travels').select('id, created_at, updated_at').eq('user_id', user.id),
+        s.from('foreign_postings').select('id, created_at, updated_at').eq('user_id', user.id),
+        s.from('lien_deputations').select('id, created_at, updated_at').eq('user_id', user.id),
+      ]);
+
+      // Process each table's results
+      if (profileRes.data) {
+        profileRes.data.forEach((r: any) => activities.push(createActivity(r, 'profile')));
+      }
+      if (generalRes.data) {
+        generalRes.data.forEach((r: any) => activities.push(createActivity(r, 'general_information')));
+      }
+      if (officeRes.data) {
+        officeRes.data.forEach((r: any) => activities.push(createActivity(r, 'office_information')));
+      }
+      if (maritalRes.data) {
+        maritalRes.data.forEach((r: any) => activities.push(createActivity(r, 'marital_information')));
+      }
+      if (childrenRes.data) {
+        childrenRes.data.forEach((r: any) => activities.push(createActivity(r, 'children_information')));
+      }
+      if (educationRes.data) {
+        educationRes.data.forEach((r: any) => activities.push(createActivity(r, 'educational_qualifications')));
+      }
+      if (domesticRes.data) {
+        domesticRes.data.forEach((r: any) => activities.push(createActivity(r, 'domestic_trainings')));
+      }
+      if (foreignTrainingRes.data) {
+        foreignTrainingRes.data.forEach((r: any) => activities.push(createActivity(r, 'foreign_trainings')));
+      }
+      if (foreignTravelRes.data) {
+        foreignTravelRes.data.forEach((r: any) => activities.push(createActivity(r, 'foreign_travels')));
+      }
+      if (foreignPostingRes.data) {
+        foreignPostingRes.data.forEach((r: any) => activities.push(createActivity(r, 'foreign_postings')));
+      }
+      if (lienRes.data) {
+        lienRes.data.forEach((r: any) => activities.push(createActivity(r, 'lien_deputations')));
+      }
+
+      // Sort by most recent first
+      activities.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      setActivityLogs(activities);
+      setFilteredLogs(activities);
     } catch (error) {
       console.error("Error fetching activity logs:", error);
+      toast({
+        title: language === 'bn' ? 'ত্রুটি' : 'Error',
+        description: language === 'bn' ? 'কার্যক্রম লোড করতে ব্যর্থ' : 'Failed to load activities',
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
@@ -164,16 +288,14 @@ const Notifications = ({ language }: { language: "en" | "bn" }) => {
         return "default";
       case "update":
         return "secondary";
-      case "delete":
-        return "destructive";
-      case "view":
-        return "outline";
-      case "login":
-      case "logout":
-        return "secondary";
       default:
         return "default";
     }
+  };
+
+  const getEntityLabel = (entityType: string) => {
+    const key = entityType as keyof typeof t;
+    return t[key] || entityType.replace(/_/g, ' ');
   };
 
   const formatDateTime = (dateString: string) => {
@@ -192,7 +314,7 @@ const Notifications = ({ language }: { language: "en" | "bn" }) => {
       filteredLogs.map((log) => ({
         Action: log.action_type,
         Description: log.action_description,
-        Type: log.entity_type || "N/A",
+        Type: getEntityLabel(log.entity_type),
         Time: formatDateTime(log.created_at),
       }))
     );
@@ -208,7 +330,7 @@ const Notifications = ({ language }: { language: "en" | "bn" }) => {
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background">
-        <AppSidebar language={language} onNavigate={handleNavigation} />
+        <AppSidebar language={language} onNavigate={handleNavigation} notificationCount={0} />
         <SidebarInset className="flex-1">
           <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
             <div className="flex h-16 items-center gap-4 px-6">
@@ -251,15 +373,11 @@ const Notifications = ({ language }: { language: "en" | "bn" }) => {
                       <SelectItem value="all">{t.all}</SelectItem>
                       <SelectItem value="create">{t.create}</SelectItem>
                       <SelectItem value="update">{t.update}</SelectItem>
-                      <SelectItem value="delete">{t.delete}</SelectItem>
-                      <SelectItem value="view">{t.view}</SelectItem>
-                      <SelectItem value="login">{t.login}</SelectItem>
-                      <SelectItem value="logout">{t.logout}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
-                <Button onClick={handleDownloadLogs} variant="outline" size="sm">
+                <Button onClick={handleDownloadLogs} variant="outline" size="sm" disabled={filteredLogs.length === 0}>
                   <Download className="h-4 w-4 mr-2" />
                   {t.download}
                 </Button>
@@ -276,10 +394,13 @@ const Notifications = ({ language }: { language: "en" | "bn" }) => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {/* {loading ? (
+                    {loading ? (
                       <TableRow>
                         <TableCell colSpan={4} className="text-center py-8">
-                          Loading...
+                          <div className="flex items-center justify-center gap-2">
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                            <span>{t.loading}</span>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ) : filteredLogs.length === 0 ? (
@@ -293,21 +414,19 @@ const Notifications = ({ language }: { language: "en" | "bn" }) => {
                         <TableRow key={log.id}>
                           <TableCell>
                             <Badge variant={getActionBadgeVariant(log.action_type)}>
-                              {log.action_type}
+                              {log.action_type === 'create' ? t.create : t.update}
                             </Badge>
                           </TableCell>
                           <TableCell>{log.action_description}</TableCell>
                           <TableCell className="text-muted-foreground">
-                            {log.entity_type || "N/A"}
+                            {getEntityLabel(log.entity_type)}
                           </TableCell>
                           <TableCell className="text-muted-foreground">
                             {formatDateTime(log.created_at)}
                           </TableCell>
                         </TableRow>
                       ))
-                    )} */}
-
-                    Under Development
+                    )}
                   </TableBody>
                 </Table>
               </div>

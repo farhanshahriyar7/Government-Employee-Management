@@ -68,7 +68,8 @@ export default function Settings({ language: initialLanguage }: SettingsProps) {
   const fetchProfile = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
         .from('profiles')
         .select('*')
         .eq('id', user?.id)
@@ -115,7 +116,8 @@ export default function Settings({ language: initialLanguage }: SettingsProps) {
 
     try {
       setLoading(true);
-      const { error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
         .from('profiles')
         .update(formData)
         .eq('id', user?.id);
