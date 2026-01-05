@@ -20,6 +20,8 @@ import ChildrenInformation from "./pages/ChildrenInformation";
 import EducationalQualification from "./pages/EducationalQualification";
 import UploadFiles from "./pages/UploadFiles";
 import MaritalStatus from "./pages/MaritalStatus";
+import Download from "./pages/download";
+import TrainingInformation from "./pages/TrainingInformation";
 
 const queryClient = new QueryClient();
 
@@ -43,7 +45,9 @@ const App = () => {
               <Route path="/marital-status" element={<ProtectedRoute><MaritalStatus language={language} /></ProtectedRoute>} />
               <Route path="/children-information" element={<ProtectedRoute><ChildrenInformation language={language} /></ProtectedRoute>} />
               <Route path="/educational-qualification" element={<ProtectedRoute><EducationalQualification language={language} /></ProtectedRoute>} />
+              <Route path="/training-information" element={<ProtectedRoute><TrainingInformation language={language} /></ProtectedRoute>} />
               <Route path="/upload-files" element={<ProtectedRoute><UploadFiles language={language} /></ProtectedRoute>} />
+              <Route path="/download" element={<ProtectedRoute><Download language={language} /></ProtectedRoute>} />
               <Route path="/notifications" element={<ProtectedRoute><Notifications language={language} /></ProtectedRoute>} />
               {/* <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} /> */}
               <Route path="/settings" element={<ProtectedRoute><Settings language={language} /></ProtectedRoute>} />

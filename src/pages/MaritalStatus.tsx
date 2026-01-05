@@ -340,7 +340,8 @@ const MaritalStatus = ({ language: initialLanguage }: { language: 'bn' | 'en' })
             if (!user) throw new Error('No user logged in');
 
             // Upsert marital information (use onConflict on user_id so existing record is updated)
-            const { data: maritalInfo, error: maritalError } = await supabase
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { data: maritalInfo, error: maritalError } = await (supabase as any)
                 .from('marital_information')
                 .upsert({
                     user_id: user.id,
@@ -350,9 +351,11 @@ const MaritalStatus = ({ language: initialLanguage }: { language: 'bn' | 'en' })
                 .single();
 
             if (maritalError) throw maritalError;
+            if (!maritalInfo) throw new Error('Failed to create/update marital info');
 
             // Delete existing spouse info
-            const { error: deleteError } = await supabase
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { error: deleteError } = await (supabase as any)
                 .from('spouse_information')
                 .delete()
                 .eq('marital_info_id', maritalInfo.id);
@@ -381,7 +384,8 @@ const MaritalStatus = ({ language: initialLanguage }: { language: 'bn' | 'en' })
                     business_reg_number: spouse.businessRegNumber,
                 })) satisfies Database['public']['Tables']['spouse_information']['Insert'][];
 
-                const { error: spouseError } = await supabase
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const { error: spouseError } = await (supabase as any)
                     .from('spouse_information')
                     .insert(spouseData);
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Home, User, FileText, Calendar, Upload, Download, Shield, Settings, Bell, LogOut, Building2, ChevronDown, Users, GraduationCap } from "lucide-react";
+import { Home, User, FileText, Calendar, Upload, Download, Shield, Settings, Bell, LogOut, Building2, ChevronDown, Users, GraduationCap, Plane } from "lucide-react";
 import React from "react";
 import { useLocation } from "react-router-dom";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar } from "@/components/ui/sidebar";
@@ -12,10 +12,12 @@ import { useAuth } from "@/contexts/AuthContext";
 interface AppSidebarProps {
   language: 'bn' | 'en';
   onNavigate: (section: string) => void;
+  notificationCount?: number;
 }
 export function AppSidebar({
   language,
-  onNavigate
+  onNavigate,
+  notificationCount = 0
 }: AppSidebarProps) {
   const {
     state
@@ -35,6 +37,7 @@ export function AppSidebar({
     },
     { title: language === 'bn' ? 'সন্তানদের তথ্যাবলি' : 'Children Information', url: '/children-information', icon: Users as IconType, section: 'children-information' },
     { title: language === 'bn' ? 'শিক্ষাগত যোগ্যতা' : 'Educational Qualification', url: '/educational-qualification', icon: GraduationCap as IconType, section: 'educational-qualification' },
+    { title: language === 'bn' ? 'প্রশিক্ষণ ও বিদেশ তথ্য' : 'Training & Foreign Info', url: '/training-information', icon: Plane as IconType, section: 'training-information' },
   ]);
 
   const [toolsMenuItems, setToolsMenuItems] = useState<Array<{ title: string; url: string; icon: IconType; section: string }>>([
@@ -62,6 +65,9 @@ export function AppSidebar({
     personal: User,
     documents: FileText,
     leave: Calendar,
+    'training-information': Plane,
+    'educational-qualification': GraduationCap,
+    'marital-status': User,
   };
 
   // Fetch menu items from DB and replace the static lists when available
@@ -132,7 +138,8 @@ export function AppSidebar({
       if (!user?.id) return;
 
       try {
-        const { data, error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data, error } = await (supabase as any)
           .from('profiles')
           .select('full_name, employee_id, designation, passport_photo_url')
           .eq('id', user.id)
@@ -288,7 +295,11 @@ export function AppSidebar({
                       <SidebarMenuButton onClick={() => onNavigate(item.section)} className={getMenuButtonClass(item.section)} size={collapsed ? "sm" : "default"}>
                         <Icon className="h-4 w-4 shrink-0" />
                         {!collapsed && <span className="ml-2 truncate">{item.title}</span>}
-                        {item.section === 'notifications' && <div className="ml-auto h-2 w-2 bg-destructive rounded-full"></div>}
+                        {item.section === 'notifications' && notificationCount > 0 && (
+                          <span className="ml-auto px-1.5 py-0.5 text-xs font-medium bg-destructive text-destructive-foreground rounded-full min-w-[18px] text-center">
+                            {notificationCount > 99 ? '99+' : notificationCount}
+                          </span>
+                        )}
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   );
